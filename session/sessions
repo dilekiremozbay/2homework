@@ -1,0 +1,40 @@
+const express = require('express');
+const session = require('express-session');
+const MongoStore = require('connect-mongo')(session);
+const client = require('./client.js');
+const csurf = require('csurf');
+
+const app = express();
+app.use(express.urlencoded({ extended: false }));
+
+app.use(
+  session({
+    // You should actually store your JWT secret in your .env file - but to keep this example as simple as possible...
+    secret: 'supersecret difficult to guess string',
+    cookie: {},
+    resave: false,
+    saveUninitialized: false,
+    store: new MongoStore({ client: client }),
+  })
+);
+
+app.use(csurf());
+
+app.get('/', (req, res) => {
+  let token = '123456789876543';
+  if (req.session.id) token = req.session.accessToken;
+});
+
+app.post('login-button', (req, res) => {
+  req.session.token = req.body.accessToken.trim();
+
+  res.send('Welcome');
+});
+
+app.post('/logout', (req, res) => {
+  req.session.destroy((err) => {
+    res.redirect('/');
+  });
+});
+
+module.exports = app;
